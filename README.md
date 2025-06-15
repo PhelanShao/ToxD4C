@@ -1,10 +1,10 @@
 # ToxD4C: A Unified Deep Learning Framework for Advanced Molecular Toxicity Prediction
 
-ToxD4C is a state-of-the-art deep learning framework engineered for high-accuracy, interpretable, and robust prediction of molecular toxicity. It moves beyond traditional 2D graph models by creating a holistic molecular representation through the intelligent fusion of topological structure, 3D geometry, and expert-curated chemical features, all enhanced by advanced representation learning techniques.
+ToxD4C (Dual-Driven Dynamic Deep Chemistry) is a state-of-the-art deep learning framework engineered for high-accuracy, interpretable, and robust prediction of molecular toxicity. It moves beyond traditional 2D graph models by creating a holistic molecular representation through the intelligent fusion of topological structure, 3D geometry, and expert-curated chemical features, all enhanced by advanced representation learning techniques.
 
 ---
 
-## 🚀 Key Innovations
+##  Keys
 
 ToxD4C distinguishes itself through several key architectural and methodological innovations:
 
@@ -17,7 +17,7 @@ ToxD4C distinguishes itself through several key architectural and methodological
 
 ---
 
-## 🏗️ Architectural Deep Dive
+##  Architectural Deep Dive
 
 The power of ToxD4C lies in its modular, multi-branch architecture. Data flows through a series of specialized encoders, is fused intelligently, and then used for prediction.
 
@@ -32,7 +32,7 @@ Input Molecule (SMILES)
 │                           │
 │                           └──> Chemical Fingerprints & Descriptors
 │
-└──────────────────────────────────────────────────────────────────────────┐
+└───────────────────────────────────────────────────────────────────────────┐
                                                                             │
 ┌─────────────────────────── ENCODING & FUSION ─────────────────────────────┤
 │                                                                           │
@@ -43,7 +43,7 @@ Input Molecule (SMILES)
 │   [Branch 2: Geometric Encoder (Optional)]──► │                           │
 │   │ (Processes 3D Coordinates)                │                           │
 │                                               │                           │
-│   [Branch 3: Hierarchical Encoder (Optional)]─► │                           │
+│   [Branch 3: Hierarchical Encoder (Opt)]─►    │                           │
 │   │ (Multi-scale GCN features)                │                           │
 │                                               ├─► [Main Feature Fusion] ──► Fused Molecular Representation
 │   [Branch 4: Fingerprint Module (Optional)]─► │      (Concatenation +      (High-dimensional Vector)
@@ -62,7 +62,7 @@ Input Molecule (SMILES)
 │   [Multi-Task Prediction Head]                                            │
 │   │                                                                       │
 │   ├──> Task 1 (e.g., Carcinogenicity) Prediction  + [Uncertainty]         │
-│   ├──> Task 2 (e.g., Ames Mutagenicity) Prediction  + [Uncertainty]         │
+│   ├──> Task 2 (e.g., Ames Mutagenicity) Prediction  + [Uncertainty]       │
 │   ├──> ...                                                                │
 │   └──> Task N (e.g., LD50) Prediction             + [Uncertainty]         │
 │                                                                           │
@@ -100,30 +100,30 @@ This is the final output stage.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Installation
 
 Clone the repository and install the required dependencies using the provided script. This will set up the correct Conda environment and install all necessary packages.
 
 ```bash
-git clone https://github.com/your-username/ToxD4C.git
+git clone https://github.com/Phelan/ToxD4C.git
 cd ToxD4C
 bash install_dependencies.sh
 ```
 
 ### 2. Training
 
-The main training script `train_real_data.py` is designed to work with pre-processed LMDB datasets for maximum I/O efficiency.
+The main training script `train.py` is designed to work with pre-processed LMDB datasets for maximum I/O efficiency.
 
 ```bash
 # Activate the conda environment
 conda activate toxd4c
 
 # Start training
-python train_real_data.py \
+python train.py \
     --data_dir data/dataset \
-    --num_epochs 50 \
+    --num_epochs 10 \
     --batch_size 64 \
     --learning_rate 1e-4
 ```
@@ -156,10 +156,10 @@ The script will generate a `inference_results.csv` file containing the detailed 
 
 ---
 
-## 🤝 Contribution
+##  Contribution
 
 Contributions are welcome! If you have ideas for improvements, new features, or have found a bug, please feel free to open an issue or submit a pull request.
 
 ---
 
-**ToxD4C - Making molecular toxicity prediction more accurate, reliable, and intelligent.** 🧬✨
+**D4C -Dual-Driven Dynamic Deep Chemistry.** 🧬✨
