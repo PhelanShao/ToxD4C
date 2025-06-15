@@ -40,13 +40,13 @@ Input Molecule (SMILES)
 │   │ GNN (Local) + Transformer (Global)        │                           │
 │   └───────────[Dynamic Fusion]──────────────► │                           │
 │                                               │                           │
-│   [Branch 2: Geometric Encoder (Optional)]──► │                           │
+│   [Branch 2: Geometric Encoder (Opt)]──►      │                           │
 │   │ (Processes 3D Coordinates)                │                           │
 │                                               │                           │
 │   [Branch 3: Hierarchical Encoder (Opt)]─►    │                           │
 │   │ (Multi-scale GCN features)                │                           │
 │                                               ├─► [Main Feature Fusion] ──► Fused Molecular Representation
-│   [Branch 4: Fingerprint Module (Optional)]─► │      (Concatenation +      (High-dimensional Vector)
+│   [Branch 4: Fingerprint Module (Opt)]─►      │      (Concatenation +      (High-dimensional Vector)
 │   │ (ECFP, MACCS, etc. w/ Attention Fusion)   │       Linear Layer)
 │   └───────────────────────────────────────────┘                           │
 │                                                                           │
@@ -107,7 +107,7 @@ This is the final output stage.
 Clone the repository and install the required dependencies using the provided script. This will set up the correct Conda environment and install all necessary packages.
 
 ```bash
-git clone https://github.com/Phelan/ToxD4C.git
+git clone https://github.com/PhelanShao/ToxD4C.git
 cd ToxD4C
 bash install_dependencies.sh
 ```
