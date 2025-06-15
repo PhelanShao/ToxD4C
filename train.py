@@ -1,11 +1,3 @@
-"""
-ToxD4C 真实数据训练脚本
-使用真实的LMDB数据集进行训练
-
-作者: AI助手
-日期: 2024-06-11
-"""
-
 import os
 import sys
 import json
@@ -25,18 +17,15 @@ from torch.optim.lr_scheduler import LambdaLR
 import numpy as np
 from sklearn.metrics import accuracy_score, roc_auc_score, mean_squared_error, r2_score
 
-# 添加项目路径
 sys.path.append(str(Path(__file__).parent))
 
 from data.lmdb_dataset import create_lmdb_dataloaders
 from models.toxd4c import ToxD4C
 from configs.toxd4c_config import get_enhanced_toxd4c_config
 
-# 设置警告过滤
 warnings.filterwarnings('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
 
-# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -49,10 +38,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
-    """
-    Create a schedule with a learning rate that decreases linearly from the initial lr set in the optimizer to 0, after
-    a warmup period during which it increases linearly from 0 to the initial lr set in the optimizer.
-    """
     def lr_lambda(current_step):
         if current_step < num_warmup_steps:
             return float(current_step) / float(max(1, num_warmup_steps))
@@ -64,7 +49,6 @@ def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
 
 
 def check_for_nan_inf(tensor, name="tensor"):
-    """检查张量中的NaN和Inf"""
     has_nan = torch.isnan(tensor).any().item()
     has_inf = torch.isinf(tensor).any().item()
     
@@ -77,21 +61,17 @@ def check_for_nan_inf(tensor, name="tensor"):
 
 
 def safe_loss_computation(pred, target, mask, loss_fn):
-    """安全的损失计算"""
     if mask.sum() == 0:
         return torch.tensor(0.0, device=pred.device, requires_grad=True)
     
-    # 只计算有效标签的损失
     valid_pred = pred[mask]
     valid_target = target[mask]
     
-    # 检查NaN
     if check_for_nan_inf(valid_pred, "prediction") or check_for_nan_inf(valid_target, "target"):
         return torch.tensor(0.0, device=pred.device, requires_grad=True)
     
     loss = loss_fn(valid_pred, valid_target)
     
-    # 检查损失
     if check_for_nan_inf(loss, "loss"):
         return torch.tensor(0.0, device=pred.device, requires_grad=True)
     
@@ -99,7 +79,6 @@ def safe_loss_computation(pred, target, mask, loss_fn):
 
 
 def compute_metrics(predictions, targets, masks, task_type='classification'):
-    """计算评估指标"""
     metrics = {}
     
     for task_idx in range(predictions.shape[1]):
@@ -118,7 +97,6 @@ def compute_metrics(predictions, targets, masks, task_type='classification'):
         
         try:
             if task_type == 'classification':
-                # 二分类指标
                 pred_binary = (valid_pred > 0.5).astype(int)
                 target_binary = valid_target.astype(int)
                 
@@ -129,9 +107,7 @@ def compute_metrics(predictions, targets, masks, task_type='classification'):
                     auc = roc_auc_score(target_binary, valid_pred)
                     metrics[f'task_{task_idx}_auc'] = auc
             else:
-                # 回归指标
                 mse = mean_squared_error(valid_target, valid_pred)
-                # 检查真实标签的方差以避免R²为NaN
                 if np.var(valid_target) < 1e-6:
                     r2 = 0.0
                 else:
@@ -149,7 +125,6 @@ def compute_metrics(predictions, targets, masks, task_type='classification'):
 
 
 def train_epoch(model, dataloader, optimizer, scheduler, device):
-    """训练一个epoch"""
     model.train()
     total_loss = 0.0
     total_cls_loss = 0.0
@@ -161,7 +136,6 @@ def train_epoch(model, dataloader, optimizer, scheduler, device):
     
     for batch_idx, batch in enumerate(dataloader):
         try:
-            # 移动数据到设备
             data = {
                 'atom_features': batch['atom_features'].to(device),
                 'edge_index': batch['edge_index'].to(device),
@@ -175,12 +149,10 @@ def train_epoch(model, dataloader, optimizer, scheduler, device):
             reg_mask = batch['regression_mask'].to(device)
             smiles_list = batch['smiles']
             
-            # 前向传播
             optimizer.zero_grad()
             
             outputs = model(data, smiles_list)
             
-            # 检查输出
             cls_preds = outputs['predictions']['classification']
             reg_preds = outputs['predictions']['regression']
 
@@ -192,7 +164,6 @@ def train_epoch(model, dataloader, optimizer, scheduler, device):
                 logger.warning(f"NaN in regression output at batch {batch_idx}")
                 continue
             
-            # 计算损失
             cls_loss = safe_loss_computation(
                 cls_preds, cls_labels, cls_mask,
                 lambda p, t: classification_criterion(p, t).mean()
@@ -205,18 +176,14 @@ def train_epoch(model, dataloader, optimizer, scheduler, device):
             
             total_loss_batch = cls_loss + reg_loss
             
-            # 检查总损失
             if check_for_nan_inf(total_loss_batch, "total_loss"):
                 logger.warning(f"NaN in total loss at batch {batch_idx}")
                 continue
             
-            # 反向传播
             total_loss_batch.backward()
             
-            # 梯度裁剪
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             
-            # 检查梯度
             has_nan_grad = False
             for name, param in model.named_parameters():
                 if param.grad is not None and check_for_nan_inf(param.grad, f"grad_{name}"):
@@ -229,11 +196,9 @@ def train_epoch(model, dataloader, optimizer, scheduler, device):
             
             optimizer.step()
             
-            # 更新学习率
             if scheduler is not None:
                 scheduler.step()
             
-            # 更新统计
             total_loss += total_loss_batch.item()
             total_cls_loss += cls_loss.item()
             total_reg_loss += reg_loss.item()
@@ -257,7 +222,6 @@ def train_epoch(model, dataloader, optimizer, scheduler, device):
 
 
 def evaluate_model(model, dataloader, device):
-    """评估模型"""
     model.eval()
     total_loss = 0.0
     total_cls_loss = 0.0
@@ -277,7 +241,6 @@ def evaluate_model(model, dataloader, device):
     with torch.no_grad():
         for batch in dataloader:
             try:
-                # 移动数据到设备
                 data = {
                     'atom_features': batch['atom_features'].to(device),
                     'edge_index': batch['edge_index'].to(device),
@@ -291,10 +254,8 @@ def evaluate_model(model, dataloader, device):
                 reg_mask = batch['regression_mask'].to(device)
                 smiles_list = batch['smiles']
                 
-                # 前向传播
                 outputs = model(data, smiles_list)
                 
-                # 检查输出
                 cls_preds = outputs['predictions']['classification']
                 reg_preds = outputs['predictions']['regression']
 
@@ -303,7 +264,6 @@ def evaluate_model(model, dataloader, device):
                 if check_for_nan_inf(reg_preds, "eval_regression"):
                     continue
                 
-                # 计算损失
                 cls_loss = safe_loss_computation(
                     cls_preds, cls_labels, cls_mask,
                     lambda p, t: classification_criterion(p, t).mean()
@@ -319,7 +279,6 @@ def evaluate_model(model, dataloader, device):
                 total_reg_loss += reg_loss.item()
                 num_batches += 1
                 
-                # 收集预测结果
                 cls_probs = torch.sigmoid(cls_preds)
                 all_cls_preds.append(cls_probs.cpu())
                 all_cls_targets.append(cls_labels.cpu())
@@ -336,7 +295,6 @@ def evaluate_model(model, dataloader, device):
     if num_batches == 0:
         return {}, 0.0, 0.0, 0.0
     
-    # 计算指标
     metrics = {}
     
     if all_cls_preds:
@@ -363,41 +321,36 @@ def evaluate_model(model, dataloader, device):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='ToxScan Enhanced 真实数据训练')
-    parser.add_argument('--data_dir', type=str, default='data/dataset', help='LMDB数据目录')
-    parser.add_argument('--experiment_name', type=str, default='toxscan_enhanced_real', help='实验名称')
-    parser.add_argument('--batch_size', type=int, default=8, help='批次大小')
-    parser.add_argument('--num_epochs', type=int, default=20, help='训练轮数')
-    parser.add_argument('--learning_rate', type=float, default=1e-4, help='学习率')
-    parser.add_argument('--max_atoms', type=int, default=64, help='最大原子数')
-    parser.add_argument('--warmup_ratio', type=float, default=0.06, help='学习率预热比例')
+    parser = argparse.ArgumentParser(description='ToxScan Enhanced Training with Real Data')
+    parser.add_argument('--data_dir', type=str, default='data/dataset', help='Directory for LMDB data')
+    parser.add_argument('--experiment_name', type=str, default='toxscan_enhanced_real', help='Name of the experiment')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
+    parser.add_argument('--num_epochs', type=int, default=20, help='Number of training epochs')
+    parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate')
+    parser.add_argument('--max_atoms', type=int, default=64, help='Maximum number of atoms')
+    parser.add_argument('--warmup_ratio', type=float, default=0.06, help='Learning rate warmup ratio')
     
     args = parser.parse_args()
     
-    # 设置设备
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"使用设备: {device}")
+    logger.info(f"Using device: {device}")
     
     if torch.cuda.is_available():
         gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1e9
-        logger.info(f"GPU总内存: {gpu_memory:.2f} GB")
+        logger.info(f"Total GPU Memory: {gpu_memory:.2f} GB")
     
-    # 创建输出目录
     output_dir = Path("checkpoints_real")
     output_dir.mkdir(exist_ok=True)
     
-    # 获取配置
     config = get_enhanced_toxd4c_config()
     config['batch_size'] = args.batch_size
     
-    # 保存配置
     config_path = output_dir / "config.json"
     with open(config_path, 'w') as f:
         json.dump(config, f, indent=2)
-    logger.info(f"配置已保存: {config_path}")
+    logger.info(f"Configuration saved to: {config_path}")
     
-    # 创建数据加载器
-    logger.info(f"加载LMDB数据集: {args.data_dir}")
+    logger.info(f"Loading LMDB dataset from: {args.data_dir}")
     try:
         train_loader, valid_loader, test_loader = create_lmdb_dataloaders(
             args.data_dir, 
@@ -405,24 +358,21 @@ def main():
             max_atoms=args.max_atoms
         )
         
-        logger.info(f"训练集批次数: {len(train_loader)}")
-        logger.info(f"验证集批次数: {len(valid_loader)}")
-        logger.info(f"测试集批次数: {len(test_loader)}")
+        logger.info(f"Number of training batches: {len(train_loader)}")
+        logger.info(f"Number of validation batches: {len(valid_loader)}")
+        logger.info(f"Number of test batches: {len(test_loader)}")
         
     except Exception as e:
-        logger.error(f"数据加载失败: {e}")
+        logger.error(f"Failed to load data: {e}")
         return
     
-    # 创建模型
-    logger.info("创建ToxD4C模型...")
+    logger.info("Creating ToxD4C model...")
     model = ToxD4C(config, device=device).to(device)
     
-    # 计算参数数量
     total_params = sum(p.numel() for p in model.parameters())
-    logger.info(f"模型创建成功，参数数量: {total_params:,}")
+    logger.info(f"Model created successfully. Total parameters: {total_params:,}")
     
-    # 测试模型前向传播
-    logger.info("测试模型前向传播...")
+    logger.info("Testing model forward pass...")
     model.eval()
     with torch.no_grad():
         try:
@@ -437,26 +387,25 @@ def main():
             
             test_outputs = model(data, smiles_list)
             
-            logger.info("测试输出形状:")
+            logger.info("Test output shapes:")
             for key, value in test_outputs['predictions'].items():
                 logger.info(f"  {key}: {value.shape}")
                 has_nan = torch.isnan(value).any().item()
                 has_inf = torch.isinf(value).any().item()
-                logger.info(f"  {key} 是否包含NaN: {has_nan}")
-                logger.info(f"  {key} 是否包含Inf: {has_inf}")
+                logger.info(f"  {key} contains NaN: {has_nan}")
+                logger.info(f"  {key} contains Inf: {has_inf}")
             
             if any(torch.isnan(v).any() for v in test_outputs['predictions'].values()):
-                logger.error("模型输出包含NaN，请检查模型实现")
+                logger.error("Model output contains NaN. Please check the model implementation.")
                 return
             
-            logger.info("模型前向传播测试通过！")
+            logger.info("Model forward pass test successful!")
             
         except Exception as e:
-            logger.error(f"模型前向传播测试失败: {e}")
+            logger.error(f"Model forward pass test failed: {e}")
             logger.error(traceback.format_exc())
             return
     
-    # 创建优化器和调度器
     optimizer = optim.AdamW(
         model.parameters(),
         lr=args.learning_rate,
@@ -464,7 +413,6 @@ def main():
         eps=1e-8
     )
     
-    # 学习率调度器 (带预热)
     num_training_steps = len(train_loader) * args.num_epochs
     num_warmup_steps = int(num_training_steps * args.warmup_ratio)
     
@@ -474,8 +422,7 @@ def main():
         num_training_steps=num_training_steps
     )
     
-    # 训练循环
-    logger.info("开始训练...")
+    logger.info("Starting training...")
     best_val_loss = float('inf')
     patience = 15
     patience_counter = 0
@@ -483,55 +430,45 @@ def main():
     for epoch in range(args.num_epochs):
         logger.info(f"\nEpoch {epoch + 1}/{args.num_epochs}")
         
-        # 训练
         train_loss, train_cls_loss, train_reg_loss = train_epoch(
             model, train_loader, optimizer, scheduler, device
         )
         
-        # 验证
         val_metrics, val_loss, val_cls_loss, val_reg_loss = evaluate_model(
             model, valid_loader, device
         )
         
-        # 详细的训练监控信息
-        logger.info(f"=== Epoch {epoch + 1} 训练结果 ===")
-        logger.info(f"训练损失: {train_loss:.4f} (分类: {train_cls_loss:.4f}, 回归: {train_reg_loss:.4f})")
-        logger.info(f"验证损失: {val_loss:.4f} (分类: {val_cls_loss:.4f}, 回归: {val_reg_loss:.4f})")
+        logger.info(f"=== Epoch {epoch + 1} Results ===")
+        logger.info(f"Training Loss: {train_loss:.4f} (Classification: {train_cls_loss:.4f}, Regression: {train_reg_loss:.4f})")
+        logger.info(f"Validation Loss: {val_loss:.4f} (Classification: {val_cls_loss:.4f}, Regression: {val_reg_loss:.4f})")
         
-        # 计算并显示关键评估指标
         if val_metrics:
-            # 分类指标统计
             cls_accs = [v for k, v in val_metrics.items() if 'accuracy' in k]
             cls_aucs = [v for k, v in val_metrics.items() if 'auc' in k]
             
-            # 回归指标统计
             r2_scores = [v for k, v in val_metrics.items() if 'r2' in k]
             rmse_scores = [v for k, v in val_metrics.items() if 'rmse' in k]
             
-            # 显示分类性能
             if cls_accs:
                 avg_acc = np.mean(cls_accs)
-                logger.info(f"平均分类准确率: {avg_acc:.4f} (有效任务: {len(cls_accs)}/26)")
+                logger.info(f"Average Classification Accuracy: {avg_acc:.4f} (on {len(cls_accs)}/26 tasks)")
             
             if cls_aucs:
                 avg_auc = np.mean(cls_aucs)
-                logger.info(f"平均AUC: {avg_auc:.4f}")
+                logger.info(f"Average AUC: {avg_auc:.4f}")
             
-            # 显示回归性能
             if r2_scores:
                 avg_r2 = np.mean(r2_scores)
-                logger.info(f"平均R²: {avg_r2:.4f} (有效任务: {len(r2_scores)}/5)")
+                logger.info(f"Average R²: {avg_r2:.4f} (on {len(r2_scores)}/5 tasks)")
             
             if rmse_scores:
                 avg_rmse = np.mean(rmse_scores)
-                logger.info(f"平均RMSE: {avg_rmse:.4f}")
+                logger.info(f"Average RMSE: {avg_rmse:.4f}")
         
-        # 保存最佳模型
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             patience_counter = 0
             
-            # 保存模型
             checkpoint = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
@@ -544,16 +481,14 @@ def main():
             
             checkpoint_path = output_dir / f"{args.experiment_name}_best.pth"
             torch.save(checkpoint, checkpoint_path)
-            logger.info(f"保存最佳模型: {checkpoint_path}")
+            logger.info(f"Best model saved to: {checkpoint_path}")
         else:
             patience_counter += 1
         
-        # 早停
         if patience_counter >= patience:
-            logger.info(f"验证损失连续{patience}个epoch未改善，早停")
+            logger.info(f"Validation loss has not improved for {patience} epochs. Early stopping.")
             break
         
-        # 定期保存检查点
         if (epoch + 1) % 10 == 0:
             checkpoint_path = output_dir / f"{args.experiment_name}_epoch_{epoch+1}.pth"
             torch.save({
@@ -565,50 +500,44 @@ def main():
                 'val_loss': val_loss,
                 'val_metrics': val_metrics
             }, checkpoint_path)
-            logger.info(f"保存检查点: {checkpoint_path}")
+            logger.info(f"Checkpoint saved to: {checkpoint_path}")
     
-    logger.info("训练完成！")
+    logger.info("Training finished!")
     
-    # 最终评估
-    logger.info("进行最终评估...")
+    logger.info("Performing final evaluation...")
     
-    # 加载最佳模型
     best_checkpoint_path = output_dir / f"{args.experiment_name}_best.pth"
     if best_checkpoint_path.exists():
         checkpoint = torch.load(best_checkpoint_path, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint['model_state_dict'])
-        logger.info(f"加载最佳模型: {best_checkpoint_path}")
+        logger.info(f"Loaded best model from: {best_checkpoint_path}")
     
-    # 最终验证
     final_metrics, final_loss, final_cls_loss, final_reg_loss = evaluate_model(
         model, valid_loader, device
     )
     
-    logger.info(f"最终验证结果:")
-    logger.info(f"  总损失: {final_loss:.4f}")
-    logger.info(f"  分类损失: {final_cls_loss:.4f}")
-    logger.info(f"  回归损失: {final_reg_loss:.4f}")
+    logger.info(f"Final Validation Results:")
+    logger.info(f"  Total Loss: {final_loss:.4f}")
+    logger.info(f"  Classification Loss: {final_cls_loss:.4f}")
+    logger.info(f"  Regression Loss: {final_reg_loss:.4f}")
     
     if final_metrics:
-        # 分类指标汇总
         cls_accs = [v for k, v in final_metrics.items() if 'accuracy' in k]
         cls_aucs = [v for k, v in final_metrics.items() if 'auc' in k]
         
         if cls_accs:
-            logger.info(f"  平均分类准确率: {np.mean(cls_accs):.4f}")
+            logger.info(f"  Average Classification Accuracy: {np.mean(cls_accs):.4f}")
         if cls_aucs:
-            logger.info(f"  平均AUC: {np.mean(cls_aucs):.4f}")
+            logger.info(f"  Average AUC: {np.mean(cls_aucs):.4f}")
         
-        # 回归指标汇总
         r2_scores = [v for k, v in final_metrics.items() if 'r2' in k]
         rmse_scores = [v for k, v in final_metrics.items() if 'rmse' in k]
         
         if r2_scores:
-            logger.info(f"  平均R²: {np.mean(r2_scores):.4f}")
+            logger.info(f"  Average R²: {np.mean(r2_scores):.4f}")
         if rmse_scores:
-            logger.info(f"  平均RMSE: {np.mean(rmse_scores):.4f}")
+            logger.info(f"  Average RMSE: {np.mean(rmse_scores):.4f}")
     
-    # 保存最终结果
     results = {
         'experiment_name': args.experiment_name,
         'config': config,
@@ -623,7 +552,7 @@ def main():
     with open(results_path, 'w') as f:
         json.dump(results, f, indent=2, default=str)
     
-    logger.info(f"结果已保存: {results_path}")
+    logger.info(f"Results saved to: {results_path}")
 
 
 if __name__ == "__main__":
