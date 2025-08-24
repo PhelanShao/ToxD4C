@@ -3,6 +3,14 @@
 ToxD4C (Dual-Driven Dynamic Deep Chemistry) is a state-of-the-art deep learning framework engineered for high-accuracy, interpretable, and robust prediction of molecular toxicity. It moves beyond traditional 2D graph models by creating a holistic molecular representation through the intelligent fusion of topological structure, 3D geometry, and expert-curated chemical features, all enhanced by advanced representation learning techniques.
 
 ---
+## Updata
+Shipped a major upgrade to the D4C toxicity–prediction stack and a brand-new Windows desktop executable. 
+If the web app is slow or unstable on your network, just download the Windows build, double-click to launch, and you’re in. 
+(Note: first start may take ~1–2 minutes while the model initializes; this depends on your PC.)
+
+![Softw1](https://raw.githubusercontent.com/PhelanShao/ToxD4C/main/exe_toxd4c/softw1.png)
+![Softw2](https://raw.githubusercontent.com/PhelanShao/ToxD4C/main/exe_toxd4c/softw2.png)
+
 
 ##  Keys
 
@@ -163,3 +171,4 @@ Contributions are welcome! If you have ideas for improvements, new features, or 
 ---
 
 **D4C -Dual-Driven Dynamic Deep Chemistry.** 🧬✨
+
