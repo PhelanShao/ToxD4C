@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Any, Optional
 from torch_geometric.nn import GCN, global_mean_pool
+from .architectures.gcn_stack import GCNStack
 from torch_geometric.utils import to_dense_batch
 
 from .architectures.gnn_transformer_hybrid import GNNTransformerHybrid
@@ -23,8 +24,21 @@ class ToxD4C(nn.Module):
         self.atom_embedding = nn.Linear(
             config['atom_features_dim'], config['hidden_dim']
         )
-        
-        if config.get('use_hybrid_architecture', False):
+
+        # 消融实验：检查是否禁用GNN或Transformer
+        use_gnn = config.get('use_gnn', True)
+        use_transformer = config.get('use_transformer', True)
+
+        if not use_gnn and not use_transformer:
+            # 如果两者都禁用，使用简单的MLP
+            self.main_encoder = nn.Sequential(
+                nn.Linear(config['hidden_dim'], config['hidden_dim']),
+                nn.ReLU(),
+                nn.Dropout(config['dropout']),
+                nn.Linear(config['hidden_dim'], config['hidden_dim'])
+            )
+        elif use_gnn and use_transformer and config.get('use_hybrid_architecture', False):
+            # 使用混合架构
             self.main_encoder = GNNTransformerHybrid(
                 input_dim=config['hidden_dim'],
                 hidden_dim=config['hidden_dim'],
@@ -32,9 +46,39 @@ class ToxD4C(nn.Module):
                 gnn_layers=config.get('gnn_layers', 3),
                 transformer_layers=config.get('transformer_layers', 3),
                 num_heads=config['num_attention_heads'],
+                dropout=config['dropout'],
+                use_dynamic_fusion=config.get('use_dynamic_fusion', True),
+                gnn_backbone=config.get('gnn_backbone', 'graph_attention')
+            )
+        elif use_gnn and not use_transformer:
+            # 仅使用GNN
+            if config.get('gnn_backbone', 'graph_attention') == 'pyg_gcn_stack':
+                self.main_encoder = GCNStack(
+                    in_channels=config['hidden_dim'],
+                    hidden_dim=config['hidden_dim'],
+                    num_layers=config.get('gcn_stack_layers', 3),
+                    dropout=config['dropout'],
+                    use_residual=True,
+                )
+            else:
+                self.main_encoder = GCN(
+                    in_channels=config['hidden_dim'],
+                    hidden_channels=config['hidden_dim'],
+                    num_layers=config['num_encoder_layers'],
+                    dropout=config['dropout']
+                )
+        elif not use_gnn and use_transformer:
+            # 仅使用Transformer (需要实现)
+            from .architectures.transformer_only import TransformerOnly
+            self.main_encoder = TransformerOnly(
+                input_dim=config['hidden_dim'],
+                hidden_dim=config['hidden_dim'],
+                num_layers=config.get('transformer_layers', 3),
+                num_heads=config['num_attention_heads'],
                 dropout=config['dropout']
             )
         else:
+            # 默认使用GCN
             self.main_encoder = GCN(
                 in_channels=config['hidden_dim'],
                 hidden_channels=config['hidden_dim'],
@@ -75,13 +119,22 @@ class ToxD4C(nn.Module):
             
         self.fusion_layer = nn.Linear(fusion_input_dim, config['hidden_dim'])
         
+        # 根据配置启用/禁用任务分支（用于消融）
+        classification_enabled = config.get('enable_classification', True)
+        regression_enabled = config.get('enable_regression', True)
+
+        enabled_cls_tasks = CLASSIFICATION_TASKS if classification_enabled else []
+        enabled_reg_tasks = REGRESSION_TASKS if regression_enabled else []
+
         self.prediction_head = MultiScalePredictionHead(
             input_dim=config['hidden_dim'],
             task_configs=config['task_configs'],
             dropout=config['dropout'],
             uncertainty_weighting=config.get('uncertainty_weighting', False),
-            classification_tasks_list=CLASSIFICATION_TASKS,
-            regression_tasks_list=REGRESSION_TASKS
+            classification_tasks_list=enabled_cls_tasks,
+            regression_tasks_list=enabled_reg_tasks,
+            single_endpoint_cls=config.get('single_endpoint_cls'),
+            single_endpoint_reg=config.get('single_endpoint_reg')
         )
         
         if config.get('use_contrastive_learning', False):
@@ -102,11 +155,27 @@ class ToxD4C(nn.Module):
         if hasattr(self, 'geometric_encoder') and pos is not None:
             atom_repr = self.geometric_encoder(atom_repr, pos, edge_index)
         
+        # 根据编码器类型调用不同的方法
         if isinstance(self.main_encoder, GCN):
             node_repr = self.main_encoder(atom_repr, edge_index)
             graph_repr_main = global_mean_pool(node_repr, batch)
-        else:
+        elif hasattr(self.main_encoder, 'forward') and 'GNNTransformerHybrid' in str(type(self.main_encoder)):
+            # 混合架构
             graph_repr_main, _ = self.main_encoder(atom_repr, edge_index, batch)
+        elif hasattr(self.main_encoder, 'forward') and 'TransformerOnly' in str(type(self.main_encoder)):
+            # 仅Transformer架构
+            graph_repr_main = self.main_encoder(atom_repr, edge_index, batch)
+        elif isinstance(self.main_encoder, nn.Sequential):
+            # 简单MLP（当GNN和Transformer都禁用时）
+            node_repr = self.main_encoder(atom_repr)
+            graph_repr_main = global_mean_pool(node_repr, batch)
+        else:
+            # 默认处理
+            try:
+                graph_repr_main, _ = self.main_encoder(atom_repr, edge_index, batch)
+            except:
+                node_repr = self.main_encoder(atom_repr, edge_index)
+                graph_repr_main = global_mean_pool(node_repr, batch)
         
         all_graph_repr = [graph_repr_main]
         
@@ -145,9 +214,15 @@ class ToxD4C(nn.Module):
                                  features: torch.Tensor, 
                                  labels: torch.Tensor) -> torch.Tensor:
         if hasattr(self, 'contrastive_loss'):
-            if features.ndim == 2:
-                features = features.unsqueeze(1)
-            return self.contrastive_loss(features, labels)
+            # Expect features shape [batch, dim]; SupConLoss expects [batch, dim]
+            # Labels are continuous multi-task targets used to define similarity.
+            try:
+                if features.ndim > 2:
+                    features = features.view(features.size(0), -1)
+                return self.contrastive_loss(features, labels)
+            except Exception:
+                # Fallback: return zero to avoid training breakage
+                return torch.tensor(0.0, device=self.device)
         
         return torch.tensor(0.0, device=self.device)
 

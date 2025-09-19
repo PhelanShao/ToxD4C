@@ -24,9 +24,11 @@ class LMDBToxD4CDataset(Dataset):
         self.lmdb_path = lmdb_path
         self.max_atoms = max_atoms
         
+        # Auto-detect LMDB format: directory vs file
+        subdir_flag = os.path.isdir(lmdb_path)
         self.env = lmdb.open(
             lmdb_path,
-            subdir=False,
+            subdir=subdir_flag,
             readonly=True,
             lock=False,
             readahead=False,
@@ -46,9 +48,10 @@ class LMDBToxD4CDataset(Dataset):
                 
                 try:
                     key_str = key.decode('ascii')
-                    if not key_str.isdigit() and key_str != 'length':
+                    # Keep all actual entries except LMDB bookkeeping keys
+                    if key_str not in ['length', '__keys__']:
                         self.smiles_keys.append(key_str)
-                except:
+                except Exception:
                     continue
                 
         
@@ -71,7 +74,7 @@ class LMDBToxD4CDataset(Dataset):
     
     def __getitem__(self, idx):
         smiles = self.smiles_keys[idx]
-        
+
         with self.env.begin() as txn:
             try:
                 data_bytes = txn.get(smiles.encode('ascii'))
@@ -79,25 +82,27 @@ class LMDBToxD4CDataset(Dataset):
                     return None
 
                 data = pickle.loads(data_bytes)
-                
-                mol = Chem.MolFromSmiles(smiles)
-                if mol is None:
+
+                # For preprocessed data, all necessary tensors are already stored.
+                # No more real-time 3D conformer generation!
+                if 'atom_features' not in data or 'coordinates' not in data:
+                    logger.warning(f"Missing preprocessed features for {smiles}, skipping")
                     return None
 
-                try:
-                    Chem.SanitizeMol(mol)
-                except Exception as e:
-                    logger.warning(f"Molecule sanitization check failed, skipping sample. SMILES: {smiles}, Error: {e}")
-                    return None
+                atom_features = data['atom_features']
+                bond_features = data['bond_features']
+                edge_index = data['edge_index']
+                coords = data['coordinates']
 
-                graph_data = self.feature_extractor.mol_to_graph(mol)
-                if graph_data is None:
-                    return None
-                
-                atom_features = graph_data['atom_features']
-                bond_features = graph_data['bond_features']
-                edge_index = graph_data['edge_index']
-                coords = graph_data['coordinates']
+                # Convert to numpy if they are tensors
+                if hasattr(atom_features, 'numpy'):
+                    atom_features = atom_features.numpy()
+                if hasattr(bond_features, 'numpy'):
+                    bond_features = bond_features.numpy()
+                if hasattr(edge_index, 'numpy'):
+                    edge_index = edge_index.numpy()
+                if hasattr(coords, 'numpy'):
+                    coords = coords.numpy()
 
                 if len(atom_features) > self.max_atoms:
                     atom_features = atom_features[:self.max_atoms]
@@ -125,6 +130,8 @@ class LMDBToxD4CDataset(Dataset):
                 classification_labels = np.where(cls_mask, classification_labels, 0.0)
                 regression_labels = np.where(reg_mask, regression_labels, 0.0)
                 
+                smiles_str = data.get('smiles', smiles)
+
                 return {
                     'atom_features': torch.tensor(atom_features, dtype=torch.float32),
                     'bond_features': torch.tensor(bond_features, dtype=torch.float32),
@@ -134,7 +141,7 @@ class LMDBToxD4CDataset(Dataset):
                     'regression_labels': torch.tensor(regression_labels, dtype=torch.float32),
                     'classification_mask': torch.tensor(cls_mask.astype(np.float32), dtype=torch.bool),
                     'regression_mask': torch.tensor(reg_mask.astype(np.float32), dtype=torch.bool),
-                    'smiles': smiles
+                    'smiles': smiles_str
                 }
                 if isinstance(coords_list, list) and len(coords_list) > 0:
                     coords = np.array(coords_list[0], dtype=np.float32)
@@ -187,6 +194,8 @@ class LMDBToxD4CDataset(Dataset):
                 classification_labels = np.where(cls_mask, classification_labels, 0.0)
                 regression_labels = np.where(reg_mask, regression_labels, 0.0)
                 
+                smiles_str = data.get('smiles', smiles)
+
                 return {
                     'atom_features': torch.tensor(atom_features, dtype=torch.float32),
                     'bond_features': torch.tensor(bond_features, dtype=torch.float32),
@@ -196,7 +205,7 @@ class LMDBToxD4CDataset(Dataset):
                     'regression_labels': torch.tensor(regression_labels, dtype=torch.float32),
                     'classification_mask': torch.tensor(cls_mask.astype(np.float32), dtype=torch.bool),
                     'regression_mask': torch.tensor(reg_mask.astype(np.float32), dtype=torch.bool),
-                    'smiles': smiles
+                    'smiles': smiles_str
                 }
                 
             except Exception as e:

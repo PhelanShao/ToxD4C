@@ -10,14 +10,27 @@ class MultiScalePredictionHead(nn.Module):
                  dropout: float = 0.1,
                  uncertainty_weighting: bool = False,
                  classification_tasks_list: List[str] = None,
-                 regression_tasks_list: List[str] = None):
+                 regression_tasks_list: List[str] = None,
+                 single_endpoint_cls: Optional[int] = None,
+                 single_endpoint_reg: Optional[int] = None):
         super().__init__()
         
         self.input_dim = input_dim
         self.task_configs = task_configs
         self.uncertainty_weighting = uncertainty_weighting
-        self.classification_tasks_list = classification_tasks_list or []
-        self.regression_tasks_list = regression_tasks_list or []
+        self.single_endpoint_cls = single_endpoint_cls
+        self.single_endpoint_reg = single_endpoint_reg
+        
+        # Filter tasks for single endpoint mode
+        if single_endpoint_cls is not None:
+            self.classification_tasks_list = [classification_tasks_list[single_endpoint_cls]] if classification_tasks_list and single_endpoint_cls < len(classification_tasks_list) else []
+            self.regression_tasks_list = []
+        elif single_endpoint_reg is not None:
+            self.classification_tasks_list = []
+            self.regression_tasks_list = [regression_tasks_list[single_endpoint_reg]] if regression_tasks_list and single_endpoint_reg < len(regression_tasks_list) else []
+        else:
+            self.classification_tasks_list = classification_tasks_list or []
+            self.regression_tasks_list = regression_tasks_list or []
         
         self.task_heads = nn.ModuleDict()
         

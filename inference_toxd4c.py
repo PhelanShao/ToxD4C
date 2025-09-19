@@ -69,6 +69,8 @@ class ToxD4CPredictor:
 
         with torch.no_grad():
             for batch in dataloader:
+                if batch is None:
+                    continue
                 # 移动数据到设备
                 data = {
                     'atom_features': batch['atom_features'].to(self.device),
@@ -97,9 +99,10 @@ class ToxD4CPredictor:
         
         # 创建DataFrame
         results_df = pd.DataFrame({'SMILES': all_smiles})
-        
-        # 添加分类结果 (0或1)
+
+        # 添加分类概率与标签 (prob 概率 + 二值化标签)
         for i, task_name in enumerate(CLASSIFICATION_TASKS):
+            results_df[f"{task_name}_prob"] = cls_preds_np[:, i]
             results_df[task_name] = (cls_preds_np[:, i] > 0.5).astype(int)
             
         # 添加回归结果
@@ -109,9 +112,27 @@ class ToxD4CPredictor:
         return results_df
     
 class SmilesDataset(Dataset):
-    """从SMILES列表创建数据集"""
+    """从SMILES列表创建数据集
+    兼容多列输入：默认取首列为 SMILES（制表符或空白分隔）。
+    跳过空行与疑似表头（包含 'smiles'）。
+    """
     def __init__(self, smiles_list: List[str]):
-        self.smiles_list = [s.strip() for s in smiles_list if s.strip()]
+        cleaned = []
+        for raw in smiles_list:
+            line = raw.strip()
+            if not line:
+                continue
+            low = line.lower()
+            if 'smiles' in low and (low.startswith('smiles') or low.split()[0] == 'smiles'):
+                continue
+            parts = line.split('\t') if ('\t' in line) else line.split()
+            if not parts:
+                continue
+            smiles = parts[0].strip()
+            if smiles:
+                cleaned.append(smiles)
+
+        self.smiles_list = cleaned
         self.feature_extractor = MolecularFeatureExtractor()
 
     def __len__(self):
@@ -151,6 +172,7 @@ def main():
     parser.add_argument('--smiles_file', type=str, default=None, help='包含SMILES字符串的输入文件路径')
     parser.add_argument('--data_dir', type=str, default='data/dataset', help='LMDB数据目录 (如果smiles_file未提供)')
     parser.add_argument('--batch_size', type=int, default=32, help='批次大小')
+    parser.add_argument('--device', type=str, default=None, choices=['cpu', 'cuda'], help='推理设备(cpu/cuda)')
     parser.add_argument('--output_file', type=str, default='inference_results.csv', help='输出CSV文件路径')
     
     args = parser.parse_args()
@@ -158,7 +180,10 @@ def main():
     print("=== ToxD4C 推理 ===")
     
     # 设置设备
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if args.device is not None:
+        device = args.device
+    else:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
     
     # 使用安全配置进行推理
     config = get_enhanced_toxd4c_config()
