@@ -1,6 +1,7 @@
 """
-Transformer-only architecture for ablation studies
-当禁用GNN组件时使用
+Transformer-only architecture for ablation studies.
+
+Used when the GNN branch is disabled.
 """
 
 import torch
@@ -12,7 +13,7 @@ import math
 
 
 class PositionalEncoding(nn.Module):
-    """位置编码模块"""
+    """Positional encoding module."""
     
     def __init__(self, d_model: int, max_len: int = 5000):
         super().__init__()
@@ -37,7 +38,7 @@ class PositionalEncoding(nn.Module):
 
 
 class TransformerOnly(nn.Module):
-    """仅使用Transformer的编码器（用于消融实验）"""
+    """Transformer-only encoder used in ablation studies."""
     
     def __init__(self, 
                  input_dim: int,
@@ -54,16 +55,16 @@ class TransformerOnly(nn.Module):
         self.num_heads = num_heads
         self.max_atoms = max_atoms
         
-        # 输入投影
+        # Input projection
         if input_dim != hidden_dim:
             self.input_projection = nn.Linear(input_dim, hidden_dim)
         else:
             self.input_projection = nn.Identity()
-        
-        # 位置编码
+
+        # Positional encoding
         self.pos_encoding = PositionalEncoding(hidden_dim, max_atoms)
-        
-        # Transformer编码器层
+
+        # Transformer encoder stack
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=hidden_dim,
             nhead=num_heads,
@@ -74,128 +75,122 @@ class TransformerOnly(nn.Module):
         )
         
         self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layer, 
+            encoder_layer,
             num_layers=num_layers
         )
-        
-        # 输出投影
+
+        # Output projection
         self.output_projection = nn.Linear(hidden_dim, hidden_dim)
         self.dropout = nn.Dropout(dropout)
-        
+
     def forward(self, x, edge_index, batch=None):
         """
         Args:
-            x: 节点特征 [num_nodes, input_dim]
-            edge_index: 边索引 [2, num_edges] (在此架构中不使用)
-            batch: 批次索引 [num_nodes]
-        
+            x: node features with shape [num_nodes, input_dim]
+            edge_index: edge indices [2, num_edges] (ignored in this encoder)
+            batch: batch indices for each node [num_nodes]
+
         Returns:
-            graph_representation: [batch_size, hidden_dim]
+            graph_representation: pooled graph embedding with shape [batch_size, hidden_dim]
         """
         batch_size = batch.max().item() + 1 if batch is not None else 1
-        
-        # 投影到隐藏维度
+
+        # Project to the hidden dimension
         x = self.input_projection(x)  # [num_nodes, hidden_dim]
-        
-        # 转换为密集批次格式
+
+        # Convert to a dense representation per batch element
         x_dense, mask = to_dense_batch(x, batch, max_num_nodes=self.max_atoms)
         # x_dense: [batch_size, max_atoms, hidden_dim]
         # mask: [batch_size, max_atoms]
-        
-        # 转换为Transformer期望的格式 [seq_len, batch, features]
+
+        # Reshape to [seq_len, batch, features] for the transformer
         x_dense = x_dense.transpose(0, 1)  # [max_atoms, batch_size, hidden_dim]
-        
-        # 添加位置编码
+
+        # Add positional encodings
         x_dense = self.pos_encoding(x_dense)
-        
-        # 创建注意力掩码（True表示忽略的位置）
-        # mask: [batch_size, max_atoms] -> [batch_size, max_atoms]
-        attn_mask = ~mask  # 反转掩码，True表示要忽略的位置
-        
-        # Transformer编码
-        # 注意：nn.TransformerEncoder期望src_key_padding_mask的形状为[batch_size, seq_len]
+
+        # Create the attention mask (True denotes padding locations)
+        attn_mask = ~mask
+
+        # Transformer encoder pass (expects [batch_size, seq_len] padding mask)
         encoded = self.transformer_encoder(
             x_dense, 
             src_key_padding_mask=attn_mask
         )  # [max_atoms, batch_size, hidden_dim]
-        
-        # 转换回 [batch_size, max_atoms, hidden_dim]
+
+        # Convert back to [batch_size, max_atoms, hidden_dim]
         encoded = encoded.transpose(0, 1)
-        
-        # 应用掩码并进行全局平均池化
+
+        # Apply the mask followed by mean pooling
         mask_expanded = mask.unsqueeze(-1).expand_as(encoded)
         encoded_masked = encoded * mask_expanded.float()
-        
-        # 计算每个图的平均表示
+
+        # Compute a masked average for each graph
         graph_lengths = mask.sum(dim=1, keepdim=True).float()  # [batch_size, 1]
         graph_representation = encoded_masked.sum(dim=1) / graph_lengths.clamp(min=1)
         # [batch_size, hidden_dim]
-        
-        # 输出投影和dropout
+
+        # Output projection and dropout
         graph_representation = self.output_projection(graph_representation)
         graph_representation = self.dropout(graph_representation)
-        
+
         return graph_representation
-    
+
     def get_attention_weights(self, x, edge_index, batch=None):
-        """获取注意力权重用于可视化"""
-        # 这里可以实现注意力权重的提取
-        # 为了简化，暂时返回None
+        """Hook for extracting attention weights for visualisation."""
+        # The implementation can be added when attention visualisation is required.
         return None
 
 
 class TransformerOnlyWithEdges(TransformerOnly):
-    """
-    考虑边信息的Transformer-only架构
-    通过边信息构建注意力偏置
-    """
-    
+    """Transformer-only encoder that incorporates edge-aware attention biases."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # 边嵌入（可选）
-        self.edge_embedding = nn.Linear(1, self.num_heads)  # 简单的边权重嵌入
-        
+
+        # Optional edge embedding used to bias attention scores
+        self.edge_embedding = nn.Linear(1, self.num_heads)
+
     def create_attention_bias(self, edge_index, batch, max_atoms):
         """
-        基于图的边信息创建注意力偏置
-        
+        Create an attention bias tensor from the graph connectivity.
+
         Args:
-            edge_index: [2, num_edges]
-            batch: [num_nodes]
-            max_atoms: int
-            
+            edge_index: edge indices [2, num_edges]
+            batch: batch indices for each node [num_nodes]
+            max_atoms: maximum number of atoms per graph
+
         Returns:
-            attention_bias: [batch_size, num_heads, max_atoms, max_atoms]
+            attention_bias: tensor with shape [batch_size, num_heads, max_atoms, max_atoms]
         """
         batch_size = batch.max().item() + 1
         device = edge_index.device
-        
-        # 初始化注意力偏置矩阵
+
+        # Initialise bias tensor
         attention_bias = torch.zeros(
             batch_size, self.num_heads, max_atoms, max_atoms,
             device=device
         )
-        
-        # 为每个批次构建邻接矩阵
+
+        # Build adjacency information per batch example
         for b in range(batch_size):
-            # 获取当前批次的节点
+            # Select the nodes belonging to this batch element
             node_mask = (batch == b)
             node_indices = torch.where(node_mask)[0]
-            
+
             if len(node_indices) == 0:
                 continue
-                
-            # 重新映射节点索引到局部索引
+
+            # Map global indices to local indices
             global_to_local = {global_idx.item(): local_idx 
                              for local_idx, global_idx in enumerate(node_indices)}
-            
-            # 找到当前批次的边
+
+            # Identify edges inside the current batch element
             edge_mask = torch.isin(edge_index[0], node_indices) & \
                        torch.isin(edge_index[1], node_indices)
             batch_edges = edge_index[:, edge_mask]
-            
-            # 转换为局部索引
+
+            # Convert to local indices
             for edge_idx in range(batch_edges.size(1)):
                 src_global = batch_edges[0, edge_idx].item()
                 dst_global = batch_edges[1, edge_idx].item()
@@ -204,18 +199,14 @@ class TransformerOnlyWithEdges(TransformerOnly):
                     src_local = global_to_local[src_global]
                     dst_local = global_to_local[dst_global]
                     
-                    # 设置注意力偏置（连接的节点之间注意力权重更高）
+                    # Encourage higher attention between connected nodes
                     attention_bias[b, :, src_local, dst_local] = 1.0
-                    attention_bias[b, :, dst_local, src_local] = 1.0  # 无向图
+                    attention_bias[b, :, dst_local, src_local] = 1.0  # undirected graph
         
         return attention_bias
     
     def forward(self, x, edge_index, batch=None):
-        """
-        带边信息的前向传播
-        """
-        # 基础的Transformer处理
+        """Forward pass with optional edge-aware adjustments."""
+        # Delegate to the base transformer encoder for now
         return super().forward(x, edge_index, batch)
-        
-        # TODO: 如果需要使用边信息，可以在这里实现
-        # 目前为了简化，直接使用父类的实现
+        # TODO: incorporate attention_bias derived from edge_index when required

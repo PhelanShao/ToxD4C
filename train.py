@@ -816,7 +816,7 @@ def main():
             
             if r2_scores:
                 avg_r2 = np.mean(r2_scores)
-                logger.info(f"Average R²: {avg_r2:.4f} (on {len(r2_scores)}/5 tasks)")
+                logger.info(f"Average R^2: {avg_r2:.4f} (on {len(r2_scores)}/5 tasks)")
             
             if rmse_scores:
                 avg_rmse = np.mean(rmse_scores)
@@ -891,7 +891,7 @@ def main():
         rmse_scores = [v for k, v in final_metrics.items() if 'rmse' in k]
         
         if r2_scores:
-            logger.info(f"  Average R²: {np.mean(r2_scores):.4f}")
+            logger.info(f"  Average R^2: {np.mean(r2_scores):.4f}")
         if rmse_scores:
             logger.info(f"  Average RMSE: {np.mean(rmse_scores):.4f}")
     
