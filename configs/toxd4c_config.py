@@ -99,16 +99,16 @@ def get_enhanced_toxd4c_config() -> Dict[str, Any]:
         'hierarchy_levels': [2, 4, 8],
         
         'use_hybrid_architecture': True,
-        # GNN 主干类型: 'graph_attention' (默认) 或 'pyg_gcn_stack'
+        # GNN backbone options: 'graph_attention' (default) or 'pyg_gcn_stack'
         'gnn_backbone': 'graph_attention',
-        'use_gnn': True,  # 消融实验：是否使用GNN
-        'use_transformer': True,  # 消融实验：是否使用Transformer
+        'use_gnn': True,  # Ablation toggle for the GNN branch
+        'use_transformer': True,  # Ablation toggle for the transformer branch
         'gnn_layers': 3,
-        # 若使用 'pyg_gcn_stack'，可指定层数（建议2-4）
+        # If 'pyg_gcn_stack' is selected, this controls the stack depth (recommended 2-4)
         'gcn_stack_layers': 3,
         'transformer_layers': 3,
         'fusion_method': 'cross_attention',
-        'use_dynamic_fusion': True,  # 消融实验：是否使用动态融合
+        'use_dynamic_fusion': True,  # Ablation toggle for the dynamic fusion module
         
         'use_fingerprints': True,
         'fingerprint_dim': 512,
