@@ -1,0 +1,13 @@
+{
+  "split": "test",
+  "checkpoint": "experiments/toxd4c_ablation_full_pyg_gcn_stack_20250910_165310/checkpoints/toxd4c_ablation_full_pyg_gcn_stack_best.pth",
+  "metrics": {
+    "avg_cls_accuracy": 0.8703089154315755,
+    "avg_auc": 0.8230221324879052,
+    "avg_r2": 0.6567629814147949,
+    "avg_rmse": 0.7577655138060688
+  },
+  "total_loss": 0.46611740966135334,
+  "classification_loss": 0.2510704658496354,
+  "regression_loss": 0.21504694353204246
+}

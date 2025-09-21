@@ -1,0 +1,9 @@
+2025-09-14 03:41:39,774 - INFO - 🔬 Starting experiment: r1c3_headft_cls_19_seed_42
+2025-09-14 03:41:39,774 - INFO - 📁 Experiment directory: experiments/r1c3_headft_cls_19_seed_42_20250914_034139
+2025-09-14 03:41:39,774 - INFO - 🎲 Random seed: 42
+2025-09-14 03:41:39,774 - INFO - 🔒 Deterministic mode: True
+2025-09-14 03:41:39,774 - INFO - Using device: cuda
+2025-09-14 03:41:39,774 - INFO - Total GPU Memory: 25.16 GB
+2025-09-14 03:41:39,789 - INFO - 🧪 Fusion: Using cross-attention dynamic fusion
+2025-09-14 03:41:39,789 - INFO - 🧪 GNN Backbone: Using default GraphAttentionNetwork branch
+2025-09-14 03:41:39,789 - INFO - 🎯 Task Mode: Single classification endpoint 19

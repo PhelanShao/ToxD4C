@@ -1,0 +1,11 @@
+{
+  "split": "test",
+  "checkpoint": "experiments/toxd4c_ablation_regression_only_20250910_093009/checkpoints/toxd4c_ablation_regression_only_best.pth",
+  "metrics": {
+    "avg_r2": 0.7274179935455323,
+    "avg_rmse": 0.6670030613704256
+  },
+  "total_loss": 0.18195528876445974,
+  "classification_loss": 0.0,
+  "regression_loss": 0.18195528876445974
+}

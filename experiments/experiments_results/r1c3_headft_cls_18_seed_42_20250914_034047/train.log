@@ -1,0 +1,85 @@
+2025-09-14 03:40:47,622 - INFO - 🔬 Starting experiment: r1c3_headft_cls_18_seed_42
+2025-09-14 03:40:47,622 - INFO - 📁 Experiment directory: experiments/r1c3_headft_cls_18_seed_42_20250914_034047
+2025-09-14 03:40:47,622 - INFO - 🎲 Random seed: 42
+2025-09-14 03:40:47,622 - INFO - 🔒 Deterministic mode: True
+2025-09-14 03:40:47,623 - INFO - Using device: cuda
+2025-09-14 03:40:47,623 - INFO - Total GPU Memory: 25.16 GB
+2025-09-14 03:40:47,638 - INFO - 🧪 Fusion: Using cross-attention dynamic fusion
+2025-09-14 03:40:47,638 - INFO - 🧪 GNN Backbone: Using default GraphAttentionNetwork branch
+2025-09-14 03:40:47,638 - INFO - 🎯 Task Mode: Single classification endpoint 18
+2025-09-14 03:40:47,638 - INFO - Configuration saved to: experiments/r1c3_headft_cls_18_seed_42_20250914_034047/checkpoints/config.json
+2025-09-14 03:40:47,639 - INFO - 🚀 Using preprocessed data from: /mnt/backup2/ai4s/backupunimolpy/responds-work/ToxD4C/data/data/processed
+2025-09-14 03:40:47,639 - INFO - Loading LMDB dataset from: /mnt/backup2/ai4s/backupunimolpy/responds-work/ToxD4C/data/data/processed
+2025-09-14 03:40:48,135 - INFO - Number of training batches: 2278
+2025-09-14 03:40:48,135 - INFO - Number of validation batches: 2278
+2025-09-14 03:40:48,135 - INFO - Number of test batches: 2278
+2025-09-14 03:40:48,135 - INFO - Creating ToxD4C model...
+2025-09-14 03:40:49,217 - INFO - Model created successfully. Total parameters: 100,932,036
+2025-09-14 03:40:49,218 - INFO - Testing model forward pass...
+2025-09-14 03:40:49,648 - INFO - Test output shapes:
+2025-09-14 03:40:49,648 - INFO -   classification: torch.Size([16, 1])
+2025-09-14 03:40:49,651 - INFO -   classification contains NaN: False
+2025-09-14 03:40:49,651 - INFO -   classification contains Inf: False
+2025-09-14 03:40:49,651 - INFO -   regression: torch.Size([16, 0])
+2025-09-14 03:40:49,652 - INFO -   regression contains NaN: False
+2025-09-14 03:40:49,652 - INFO -   regression contains Inf: False
+2025-09-14 03:40:49,652 - INFO - Model forward pass test successful!
+2025-09-14 03:40:50,358 - INFO - 🔁 Loaded checkpoint from: /mnt/backup2/ai4s/backupunimolpy/responds-work/ToxD4C/experiments/r1c3_multi_full_seed_42_20250913_152627/checkpoints/r1c3_multi_full_seed_42_best.pth
+2025-09-14 03:40:50,359 - INFO - 🧩 Head-only fine-tuning: unfroze head for task 'NR-ER' and froze trunk.
+2025-09-14 03:40:50,360 - INFO - Starting training...
+2025-09-14 03:40:50,360 - INFO - 
+Epoch 1/3
+2025-09-14 03:40:50,527 - INFO - Batch 0/2278: Loss=0.0414, Cls=0.0414, Reg=0.0000, Con=0.0000
+2025-09-14 03:40:51,445 - INFO - Batch 10/2278: Loss=0.0555, Cls=0.0555, Reg=0.0000, Con=0.0000
+2025-09-14 03:40:52,338 - INFO - Batch 20/2278: Loss=1.3346, Cls=0.1463, Reg=0.0000, Con=3.9610
+2025-09-14 03:40:53,222 - INFO - Batch 30/2278: Loss=0.0000, Cls=0.0000, Reg=0.0000, Con=0.0000
+2025-09-14 03:40:54,189 - INFO - Batch 40/2278: Loss=1.7212, Cls=1.7212, Reg=0.0000, Con=0.0000
+2025-09-14 03:40:55,160 - INFO - Batch 50/2278: Loss=1.4229, Cls=0.2346, Reg=0.0000, Con=3.9609
+2025-09-14 03:40:56,065 - INFO - Batch 60/2278: Loss=2.6359, Cls=1.4476, Reg=0.0000, Con=3.9609
+2025-09-14 03:40:57,049 - INFO - Batch 70/2278: Loss=1.1882, Cls=0.0000, Reg=0.0000, Con=3.9608
+2025-09-14 03:40:57,965 - INFO - Batch 80/2278: Loss=0.0071, Cls=0.0071, Reg=0.0000, Con=0.0000
+2025-09-14 03:40:58,905 - INFO - Batch 90/2278: Loss=0.0061, Cls=0.0061, Reg=0.0000, Con=0.0000
+2025-09-14 03:40:59,865 - INFO - Batch 100/2278: Loss=0.1226, Cls=0.1226, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:00,851 - INFO - Batch 110/2278: Loss=0.0000, Cls=0.0000, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:01,820 - INFO - Batch 120/2278: Loss=1.1955, Cls=0.0073, Reg=0.0000, Con=3.9609
+2025-09-14 03:41:02,784 - INFO - Batch 130/2278: Loss=1.2543, Cls=0.0660, Reg=0.0000, Con=3.9609
+2025-09-14 03:41:03,725 - INFO - Batch 140/2278: Loss=1.3136, Cls=0.1252, Reg=0.0000, Con=3.9615
+2025-09-14 03:41:04,671 - INFO - Batch 150/2278: Loss=1.2922, Cls=0.1038, Reg=0.0000, Con=3.9613
+2025-09-14 03:41:05,603 - INFO - Batch 160/2278: Loss=1.2201, Cls=0.0318, Reg=0.0000, Con=3.9611
+2025-09-14 03:41:06,586 - INFO - Batch 170/2278: Loss=1.4043, Cls=0.2160, Reg=0.0000, Con=3.9611
+2025-09-14 03:41:07,519 - INFO - Batch 180/2278: Loss=1.2013, Cls=0.0130, Reg=0.0000, Con=3.9610
+2025-09-14 03:41:08,448 - INFO - Batch 190/2278: Loss=1.2505, Cls=0.0623, Reg=0.0000, Con=3.9608
+2025-09-14 03:41:09,345 - INFO - Batch 200/2278: Loss=0.0373, Cls=0.0373, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:10,262 - INFO - Batch 210/2278: Loss=0.0234, Cls=0.0234, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:11,190 - INFO - Batch 220/2278: Loss=0.0042, Cls=0.0042, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:12,221 - INFO - Batch 230/2278: Loss=1.1940, Cls=0.0057, Reg=0.0000, Con=3.9610
+2025-09-14 03:41:13,142 - INFO - Batch 240/2278: Loss=1.1929, Cls=0.0047, Reg=0.0000, Con=3.9608
+2025-09-14 03:41:14,071 - INFO - Batch 250/2278: Loss=0.0067, Cls=0.0067, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:15,014 - INFO - Batch 260/2278: Loss=2.5639, Cls=1.3757, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:15,957 - INFO - Batch 270/2278: Loss=0.0000, Cls=0.0000, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:16,838 - INFO - Batch 280/2278: Loss=1.2011, Cls=0.0128, Reg=0.0000, Con=3.9611
+2025-09-14 03:41:17,742 - INFO - Batch 290/2278: Loss=0.0714, Cls=0.0714, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:18,656 - INFO - Batch 300/2278: Loss=1.1962, Cls=0.0080, Reg=0.0000, Con=3.9609
+2025-09-14 03:41:19,613 - INFO - Batch 310/2278: Loss=1.1905, Cls=0.0022, Reg=0.0000, Con=3.9612
+2025-09-14 03:41:20,555 - INFO - Batch 320/2278: Loss=0.0121, Cls=0.0121, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:21,494 - INFO - Batch 330/2278: Loss=1.1975, Cls=0.0093, Reg=0.0000, Con=3.9609
+2025-09-14 03:41:22,432 - INFO - Batch 340/2278: Loss=1.2471, Cls=0.0587, Reg=0.0000, Con=3.9610
+2025-09-14 03:41:23,399 - INFO - Batch 350/2278: Loss=1.2552, Cls=0.0669, Reg=0.0000, Con=3.9611
+2025-09-14 03:41:24,338 - INFO - Batch 360/2278: Loss=1.1882, Cls=0.0000, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:25,305 - INFO - Batch 370/2278: Loss=1.2011, Cls=0.0128, Reg=0.0000, Con=3.9609
+2025-09-14 03:41:26,257 - INFO - Batch 380/2278: Loss=1.1986, Cls=0.0104, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:27,214 - INFO - Batch 390/2278: Loss=1.1882, Cls=0.0000, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:28,165 - INFO - Batch 400/2278: Loss=0.1197, Cls=0.1197, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:29,136 - INFO - Batch 410/2278: Loss=0.0037, Cls=0.0037, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:30,066 - INFO - Batch 420/2278: Loss=2.0005, Cls=2.0005, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:31,043 - INFO - Batch 430/2278: Loss=1.2020, Cls=0.0138, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:31,959 - INFO - Batch 440/2278: Loss=2.5028, Cls=1.3145, Reg=0.0000, Con=3.9608
+2025-09-14 03:41:32,950 - INFO - Batch 450/2278: Loss=1.2211, Cls=0.0329, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:33,853 - INFO - Batch 460/2278: Loss=1.2853, Cls=0.0971, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:34,803 - INFO - Batch 470/2278: Loss=1.1938, Cls=0.0055, Reg=0.0000, Con=3.9611
+2025-09-14 03:41:35,737 - INFO - Batch 480/2278: Loss=1.1975, Cls=0.0093, Reg=0.0000, Con=3.9607
+2025-09-14 03:41:36,621 - INFO - Batch 490/2278: Loss=0.0000, Cls=0.0000, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:37,505 - INFO - Batch 500/2278: Loss=0.0028, Cls=0.0028, Reg=0.0000, Con=0.0000
+2025-09-14 03:41:38,373 - INFO - Batch 510/2278: Loss=1.1883, Cls=0.0000, Reg=0.0000, Con=3.9609
+2025-09-14 03:41:39,241 - INFO - Batch 520/2278: Loss=3.7328, Cls=2.5446, Reg=0.0000, Con=3.9608
+2025-09-14 03:41:40,101 - INFO - Batch 530/2278: Loss=1.2074, Cls=0.0192, Reg=0.0000, Con=3.9608

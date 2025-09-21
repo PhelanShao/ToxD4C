@@ -1,0 +1,13 @@
+{
+  "split": "test",
+  "checkpoint": "experiments/toxd4c_ablation_gnn_trans_fp_20250907_100005/checkpoints/toxd4c_ablation_gnn_trans_fp_best.pth",
+  "metrics": {
+    "avg_cls_accuracy": 0.870681717076049,
+    "avg_auc": 0.8195509531637932,
+    "avg_r2": 0.6298591375350953,
+    "avg_rmse": 0.7889826401481022
+  },
+  "total_loss": 0.4779409981232734,
+  "classification_loss": 0.24959765618972968,
+  "regression_loss": 0.22834334191891176
+}
