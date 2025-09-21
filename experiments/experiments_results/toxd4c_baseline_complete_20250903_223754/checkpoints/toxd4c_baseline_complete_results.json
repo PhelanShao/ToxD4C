@@ -1,0 +1,410 @@
+{
+  "experiment_name": "toxd4c_baseline_complete",
+  "config": {
+    "atom_features_dim": 119,
+    "bond_features_dim": 12,
+    "edge_features_dim": 12,
+    "hidden_dim": 512,
+    "num_encoder_layers": 6,
+    "num_attention_heads": 8,
+    "dropout": 0.1,
+    "use_geometric_encoder": true,
+    "geometric_hidden_dim": 256,
+    "max_distance": 10.0,
+    "num_rbf": 50,
+    "use_hierarchical_encoder": true,
+    "hierarchy_levels": [
+      2,
+      4,
+      8
+    ],
+    "use_hybrid_architecture": true,
+    "gnn_layers": 3,
+    "transformer_layers": 3,
+    "fusion_method": "cross_attention",
+    "use_fingerprints": true,
+    "fingerprint_dim": 512,
+    "fingerprint_configs": {
+      "ecfp": {
+        "n_bits": 2048,
+        "radius": 2
+      },
+      "maccs": {
+        "n_bits": 167
+      },
+      "rdkit_fp": {
+        "n_bits": 2048
+      },
+      "descriptors": {
+        "n_features": 15
+      }
+    },
+    "task_configs": {
+      "Carcinogenicity": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Ames Mutagenicity": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Respiratory toxicity": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Eye irritation": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Eye corrosion": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Cardiotoxicity1": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Cardiotoxicity10": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Cardiotoxicity30": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Cardiotoxicity5": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "CYP1A2": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "CYP2C19": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "CYP2C9": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "CYP2D6": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "CYP3A4": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-AR": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-AR-LBD": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-AhR": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-Aromatase": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-ER": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-ER-LBD": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "NR-PPAR-gamma": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "SR-ARE": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "SR-ATAD5": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "SR-HSE": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "SR-MMP": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "SR-p53": {
+        "output_dim": 1,
+        "task_type": "classification",
+        "activation": "sigmoid",
+        "loss_function": "binary_cross_entropy"
+      },
+      "Acute oral toxicity (LD50)": {
+        "output_dim": 1,
+        "task_type": "regression",
+        "activation": "linear",
+        "loss_function": "mse"
+      },
+      "LC50DM": {
+        "output_dim": 1,
+        "task_type": "regression",
+        "activation": "linear",
+        "loss_function": "mse"
+      },
+      "BCF": {
+        "output_dim": 1,
+        "task_type": "regression",
+        "activation": "linear",
+        "loss_function": "mse"
+      },
+      "LC50": {
+        "output_dim": 1,
+        "task_type": "regression",
+        "activation": "linear",
+        "loss_function": "mse"
+      },
+      "IGC50": {
+        "output_dim": 1,
+        "task_type": "regression",
+        "activation": "linear",
+        "loss_function": "mse"
+      }
+    },
+    "task_weights": {
+      "Carcinogenicity": 2.0,
+      "Ames Mutagenicity": 2.0,
+      "Acute oral toxicity (LD50)": 2.0,
+      "Cardiotoxicity1": 1.5,
+      "Cardiotoxicity5": 1.5,
+      "Cardiotoxicity10": 1.3,
+      "Cardiotoxicity30": 1.3,
+      "CYP3A4": 1.5,
+      "CYP2D6": 1.3,
+      "CYP1A2": 1.2,
+      "CYP2C9": 1.2,
+      "CYP2C19": 1.2,
+      "LC50": 1.3,
+      "IGC50": 1.3,
+      "BCF": 1.2,
+      "LC50DM": 1.2,
+      "Respiratory toxicity": 1.0,
+      "Eye irritation": 1.0,
+      "Eye corrosion": 1.0,
+      "NR-AR": 1.0,
+      "NR-AR-LBD": 1.0,
+      "NR-AhR": 1.0,
+      "NR-Aromatase": 1.0,
+      "NR-ER": 1.0,
+      "NR-ER-LBD": 1.0,
+      "NR-PPAR-gamma": 1.0,
+      "SR-ARE": 1.0,
+      "SR-ATAD5": 1.0,
+      "SR-HSE": 1.0,
+      "SR-MMP": 1.0,
+      "SR-p53": 1.0
+    },
+    "task_groups": {
+      "cardiotoxicity": [
+        "Cardiotoxicity1",
+        "Cardiotoxicity10",
+        "Cardiotoxicity30",
+        "Cardiotoxicity5"
+      ],
+      "cyp_enzymes": [
+        "CYP1A2",
+        "CYP2C19",
+        "CYP2C9",
+        "CYP2D6",
+        "CYP3A4"
+      ],
+      "nuclear_receptors": [
+        "NR-AR",
+        "NR-AR-LBD",
+        "NR-AhR",
+        "NR-Aromatase",
+        "NR-ER",
+        "NR-ER-LBD",
+        "NR-PPAR-gamma"
+      ],
+      "stress_response": [
+        "SR-ARE",
+        "SR-ATAD5",
+        "SR-HSE",
+        "SR-MMP",
+        "SR-p53"
+      ],
+      "toxicity_endpoints": [
+        "Carcinogenicity",
+        "Ames Mutagenicity",
+        "Respiratory toxicity",
+        "Eye irritation",
+        "Eye corrosion"
+      ],
+      "environmental_fate": [
+        "LC50DM",
+        "BCF",
+        "LC50",
+        "IGC50"
+      ],
+      "acute_toxicity": [
+        "Acute oral toxicity (LD50)"
+      ]
+    },
+    "use_contrastive_learning": true,
+    "contrastive_temperature": 0.1,
+    "contrastive_weight": 0.3,
+    "learning_rate": 0.0001,
+    "weight_decay": 1e-05,
+    "batch_size": 16,
+    "max_epochs": 100,
+    "patience": 10,
+    "warmup_steps": 1000,
+    "use_data_augmentation": true,
+    "augmentation_ratio": 0.1,
+    "eval_metrics": [
+      "accuracy",
+      "f1_score",
+      "auc",
+      "precision",
+      "recall"
+    ],
+    "regression_metrics": [
+      "rmse",
+      "mae",
+      "r2"
+    ],
+    "uncertainty_weighting": true,
+    "gradient_clipping": 1.0,
+    "label_smoothing": 0.1
+  },
+  "final_metrics": {
+    "task_0_accuracy": 0.5208333333333334,
+    "task_0_auc": 0.6627134724857685,
+    "task_1_accuracy": 0.8320839580209896,
+    "task_1_auc": 0.9014897074756231,
+    "task_2_accuracy": 0.7424242424242424,
+    "task_2_auc": 0.8585231193926847,
+    "task_3_accuracy": 0.946,
+    "task_3_auc": 0.9812938596491227,
+    "task_4_accuracy": 0.9627906976744186,
+    "task_4_auc": 0.9844444444444445,
+    "task_5_accuracy": 0.847457627118644,
+    "task_5_auc": 0.8405797101449277,
+    "task_6_accuracy": 0.7909604519774012,
+    "task_6_auc": 0.8538440265486726,
+    "task_7_accuracy": 0.8418079096045198,
+    "task_7_auc": 0.8491161616161615,
+    "task_8_accuracy": 0.751412429378531,
+    "task_8_auc": 0.8237997957099081,
+    "task_9_accuracy": 0.8645833333333334,
+    "task_9_auc": 0.9387466457960644,
+    "task_10_accuracy": 0.8006465517241379,
+    "task_10_auc": 0.8865472727618395,
+    "task_11_accuracy": 0.8523409363745498,
+    "task_11_auc": 0.9101982605442813,
+    "task_12_accuracy": 0.9018538713195202,
+    "task_12_auc": 0.8438954529180093,
+    "task_13_accuracy": 0.8443396226415094,
+    "task_13_auc": 0.9117085295656724,
+    "task_14_accuracy": 0.9806259314456036,
+    "task_14_auc": 0.7345787545787545,
+    "task_15_accuracy": 0.984,
+    "task_15_auc": 0.8075233388248215,
+    "task_16_accuracy": 0.8962108731466227,
+    "task_16_auc": 0.843937575030012,
+    "task_17_accuracy": 0.9532710280373832,
+    "task_17_auc": 0.8470588235294118,
+    "task_18_accuracy": 0.9041095890410958,
+    "task_18_auc": 0.7715144230769231,
+    "task_19_accuracy": 0.9631336405529954,
+    "task_19_auc": 0.8414052817237104,
+    "task_20_accuracy": 0.9588815789473685,
+    "task_20_auc": 0.8517857142857143,
+    "task_21_accuracy": 0.8503401360544217,
+    "task_21_auc": 0.8296719082185746,
+    "task_22_accuracy": 0.9601837672281777,
+    "task_22_auc": 0.8424430641821946,
+    "task_23_accuracy": 0.9412698412698413,
+    "task_23_auc": 0.8217495819397993,
+    "task_24_accuracy": 0.9022140221402214,
+    "task_24_auc": 0.9174287118977384,
+    "task_25_accuracy": 0.9163987138263665,
+    "task_25_auc": 0.8451422791045432,
+    "task_0_mse": 0.41515615582466125,
+    "task_0_rmse": 0.6443261253625071,
+    "task_0_r2": 0.4802880883216858,
+    "task_1_mse": 1.3700034618377686,
+    "task_1_rmse": 1.170471469894832,
+    "task_1_r2": 0.6577321290969849,
+    "task_2_mse": 0.5303670167922974,
+    "task_2_rmse": 0.7282630134726721,
+    "task_2_r2": 0.7217822074890137,
+    "task_3_mse": 0.7395119667053223,
+    "task_3_rmse": 0.8599488163288105,
+    "task_3_r2": 0.7088298797607422,
+    "task_4_mse": 0.30413177609443665,
+    "task_4_rmse": 0.551481437669879,
+    "task_4_r2": 0.6826398372650146
+  },
+  "final_loss": 0.37560816589796575,
+  "final_cls_loss": 0.2491916753189816,
+  "final_reg_loss": 0.12641649084562184,
+  "model_params": 100932036
+}

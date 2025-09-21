@@ -1,0 +1,13 @@
+{
+  "split": "test",
+  "checkpoint": "experiments/toxd4c_ablation_transformer_only_20250906_130502/checkpoints/toxd4c_ablation_transformer_only_best.pth",
+  "metrics": {
+    "avg_cls_accuracy": 0.8480226617451103,
+    "avg_auc": 0.7703806945203848,
+    "avg_r2": 0.5670052886009216,
+    "avg_rmse": 0.8447949899829956
+  },
+  "total_loss": 0.5576397161139116,
+  "classification_loss": 0.27827570968274157,
+  "regression_loss": 0.279364006570244
+}
