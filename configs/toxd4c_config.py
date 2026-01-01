@@ -1,4 +1,5 @@
 from typing import Dict, List, Any
+import copy
 
 
 CLASSIFICATION_TASKS = [
@@ -161,6 +162,80 @@ DATA_PATHS = {
     'results_dir': 'results/',
     'logs_dir': 'logs/'
 }
+
+
+def get_experiment_config(experiment_name: str) -> Dict[str, Any]:
+    """
+    Returns the configuration for a specific ablation study experiment.
+
+    Available experiments:
+    - 'full_model': Full model with all enhancements
+    - 'gnn_only': GNN baseline without transformer
+    - 'gnn_transformer': GNN-Transformer hybrid without other enhancements
+    - 'gnn_transformer_3d': GNN-Transformer with 3D geometric encoder
+    - 'full_pyg_gcn_stack': Full model using PyG GCN stack instead of GAT
+    - 'transformer_only': Transformer-only baseline
+    """
+    base_config = get_enhanced_toxd4c_config()
+    config = copy.deepcopy(base_config)
+
+    if experiment_name == 'full_model':
+        # Full model with all enhancements
+        config['use_geometric_encoder'] = True
+        config['use_hybrid_architecture'] = True
+        config['use_fingerprints'] = True
+        config['use_hierarchical_encoder'] = True
+        config['use_contrastive_learning'] = True
+        config['uncertainty_weighting'] = True
+
+    elif experiment_name == 'gnn_only':
+        # Baseline: Simple GCN model
+        config['use_hybrid_architecture'] = False
+        config['use_geometric_encoder'] = False
+        config['use_hierarchical_encoder'] = False
+        config['use_fingerprints'] = False
+        config['use_contrastive_learning'] = False
+        config['uncertainty_weighting'] = False
+
+    elif experiment_name == 'gnn_transformer':
+        # GNN-Transformer hybrid without other enhancements
+        config['use_geometric_encoder'] = False
+        config['use_hierarchical_encoder'] = False
+        config['use_fingerprints'] = False
+        config['use_contrastive_learning'] = False
+        config['uncertainty_weighting'] = False
+
+    elif experiment_name == 'gnn_transformer_3d':
+        # GNN-Transformer with 3D geometric encoder
+        config['use_geometric_encoder'] = True
+        config['use_hierarchical_encoder'] = False
+        config['use_fingerprints'] = False
+        config['use_contrastive_learning'] = False
+        config['uncertainty_weighting'] = False
+
+    elif experiment_name == 'full_pyg_gcn_stack':
+        # Full model using PyG GCN stack instead of GAT
+        config['gnn_backbone'] = 'pyg_gcn_stack'
+        config['use_geometric_encoder'] = True
+        config['use_hybrid_architecture'] = True
+        config['use_fingerprints'] = True
+        config['use_hierarchical_encoder'] = True
+
+    elif experiment_name == 'transformer_only':
+        # Transformer-only baseline
+        config['use_gnn'] = False
+        config['use_transformer'] = True
+        config['use_geometric_encoder'] = False
+        config['use_hierarchical_encoder'] = False
+        config['use_fingerprints'] = False
+        config['use_contrastive_learning'] = False
+        config['uncertainty_weighting'] = False
+
+    else:
+        raise ValueError(f"Unknown experiment name: {experiment_name}")
+
+    return config
+
 
 if __name__ == "__main__":
     config = get_enhanced_toxd4c_config()
