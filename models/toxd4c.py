@@ -135,13 +135,26 @@ class ToxD4C(nn.Module):
         if hasattr(self, 'geometric_encoder') and pos is not None:
             atom_repr = self.geometric_encoder(atom_repr, pos, edge_index)
         
-        if isinstance(self.main_encoder, GCN):
+        # Handle different encoder types with different return signatures
+        if isinstance(self.main_encoder, (GCN, GCNStack)):
+            # GCN and GCNStack only take (x, edge_index) and return node features
             node_repr = self.main_encoder(atom_repr, edge_index)
             graph_repr_main = global_mean_pool(node_repr, batch)
             interp_data['main_encoder'] = None
-        else:
+        elif isinstance(self.main_encoder, GNNTransformerHybrid):
+            # GNNTransformerHybrid returns (graph_repr, interpretability_data)
             graph_repr_main, main_interp_data = self.main_encoder(atom_repr, edge_index, batch)
             interp_data['main_encoder'] = main_interp_data
+        else:
+            # Fallback: try to call with batch and unpack tuple
+            try:
+                graph_repr_main, main_interp_data = self.main_encoder(atom_repr, edge_index, batch)
+                interp_data['main_encoder'] = main_interp_data
+            except (TypeError, ValueError):
+                # If that fails, assume it's a simple encoder
+                node_repr = self.main_encoder(atom_repr, edge_index)
+                graph_repr_main = global_mean_pool(node_repr, batch)
+                interp_data['main_encoder'] = None
 
         all_graph_repr = [graph_repr_main]
         

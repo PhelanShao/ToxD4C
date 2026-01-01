@@ -25,6 +25,93 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+class MolecularFeatureExtractor:
+    """
+    Shared molecular feature extraction logic.
+    Extracts atom and bond features with consistent dimensions.
+    """
+
+    # Feature dimensions
+    ATOM_FEATURES_DIM = 119
+    BOND_FEATURES_DIM = 12
+
+    @staticmethod
+    def get_atom_features(atom) -> np.ndarray:
+        """
+        Extract atom features.
+
+        Returns:
+            np.ndarray of shape (119,) containing:
+            - Atomic number one-hot (118 dim)
+            - Formal charge (1 dim)
+        """
+        features = []
+
+        # Atomic number one-hot (118 elements)
+        atomic_num = atom.GetAtomicNum()
+        one_hot = [0] * 118
+        if 0 < atomic_num <= 118:
+            one_hot[atomic_num - 1] = 1
+        features.extend(one_hot)
+
+        # Formal charge
+        features.append(atom.GetFormalCharge())
+
+        # Pad or truncate to exact dimension
+        while len(features) < MolecularFeatureExtractor.ATOM_FEATURES_DIM:
+            features.append(0)
+
+        return np.array(features[:MolecularFeatureExtractor.ATOM_FEATURES_DIM], dtype=np.float32)
+
+    @staticmethod
+    def get_bond_features(bond) -> np.ndarray:
+        """
+        Extract bond features.
+
+        Returns:
+            np.ndarray of shape (12,) containing:
+            - Bond type one-hot (4 dim: SINGLE, DOUBLE, TRIPLE, AROMATIC)
+            - Conjugated (1 dim)
+            - In ring (1 dim)
+            - Stereo (6 dim: STEREONONE, STEREOANY, STEREOZ, STEREOE, STEREOCIS, STEREOTRANS)
+        """
+        features = []
+
+        # Bond type one-hot (4 types)
+        bond_type = bond.GetBondType()
+        bond_type_one_hot = [
+            int(bond_type == Chem.BondType.SINGLE),
+            int(bond_type == Chem.BondType.DOUBLE),
+            int(bond_type == Chem.BondType.TRIPLE),
+            int(bond_type == Chem.BondType.AROMATIC)
+        ]
+        features.extend(bond_type_one_hot)
+
+        # Conjugated
+        features.append(int(bond.GetIsConjugated()))
+
+        # In ring
+        features.append(int(bond.IsInRing()))
+
+        # Stereo (6 types)
+        stereo = bond.GetStereo()
+        stereo_one_hot = [
+            int(stereo == Chem.BondStereo.STEREONONE),
+            int(stereo == Chem.BondStereo.STEREOANY),
+            int(stereo == Chem.BondStereo.STEREOZ),
+            int(stereo == Chem.BondStereo.STEREOE),
+            int(stereo == Chem.BondStereo.STEREOCIS),
+            int(stereo == Chem.BondStereo.STEREOTRANS)
+        ]
+        features.extend(stereo_one_hot)
+
+        # Pad or truncate to exact dimension
+        while len(features) < MolecularFeatureExtractor.BOND_FEATURES_DIM:
+            features.append(0)
+
+        return np.array(features[:MolecularFeatureExtractor.BOND_FEATURES_DIM], dtype=np.float32)
+
+
 def get_scaffold(smiles: str) -> Optional[str]:
     """Get Murcko scaffold for a molecule."""
     try:
@@ -173,48 +260,19 @@ class OriginalMultiConformerDataset(Dataset):
 
     def _init_feature_extractor(self):
         """Initialize feature dimensions."""
-        self.atom_features_dim = 119
-        self.bond_features_dim = 12
+        self.atom_features_dim = MolecularFeatureExtractor.ATOM_FEATURES_DIM
+        self.bond_features_dim = MolecularFeatureExtractor.BOND_FEATURES_DIM
 
     def __len__(self):
         return len(self.index)
 
     def _get_atom_features(self, atom) -> np.ndarray:
-        """Extract atom features."""
-        features = []
-
-        # Atomic number one-hot
-        atomic_num = atom.GetAtomicNum()
-        one_hot = [0] * 118
-        if 1 <= atomic_num <= 118:
-            one_hot[atomic_num - 1] = 1
-        features.extend(one_hot)
-
-        # Pad to atom_features_dim
-        while len(features) < self.atom_features_dim:
-            features.append(0)
-
-        return np.array(features[:self.atom_features_dim], dtype=np.float32)
+        """Extract atom features using shared extractor."""
+        return MolecularFeatureExtractor.get_atom_features(atom)
 
     def _get_bond_features(self, bond) -> np.ndarray:
-        """Extract bond features."""
-        features = []
-
-        # Bond type
-        bond_type = bond.GetBondType()
-        bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
-                      Chem.rdchem.BondType.TRIPLE, Chem.rdchem.BondType.AROMATIC]
-        for bt in bond_types:
-            features.append(1 if bond_type == bt else 0)
-
-        features.append(int(bond.GetIsConjugated()))
-        features.append(int(bond.IsInRing()))
-
-        # Pad to bond_features_dim
-        while len(features) < self.bond_features_dim:
-            features.append(0)
-
-        return np.array(features[:self.bond_features_dim], dtype=np.float32)
+        """Extract bond features using shared extractor."""
+        return MolecularFeatureExtractor.get_bond_features(bond)
 
     def __getitem__(self, idx):
         smiles_idx, conf_idx = self.index[idx]
@@ -657,41 +715,9 @@ class OriginalMultiConformerDatasetWithIndices(Dataset):
             return None
 
     def _get_atom_features(self, atom) -> np.ndarray:
-        """Extract atom features (same as original class)."""
-        features = []
-
-        # Atomic number one-hot (118 dim)
-        atomic_num = atom.GetAtomicNum()
-        one_hot = [0] * 118
-        if 1 <= atomic_num <= 118:
-            one_hot[atomic_num - 1] = 1
-        features.extend(one_hot)
-
-        # Pad to atom_features_dim (119)
-        while len(features) < self.atom_features_dim:
-            features.append(0)
-
-        return np.array(features[:self.atom_features_dim], dtype=np.float32)
+        """Extract atom features using shared extractor."""
+        return MolecularFeatureExtractor.get_atom_features(atom)
 
     def _get_bond_features(self, bond) -> np.ndarray:
-        """Extract bond features."""
-        features = []
-
-        # Bond type (4 dim)
-        bond_type = bond.GetBondType()
-        bond_types = [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE,
-                      Chem.rdchem.BondType.TRIPLE, Chem.rdchem.BondType.AROMATIC]
-        for bt in bond_types:
-            features.append(1 if bond_type == bt else 0)
-
-        # Is conjugated (1 dim)
-        features.append(int(bond.GetIsConjugated()))
-
-        # Is in ring (1 dim)
-        features.append(int(bond.IsInRing()))
-
-        # Pad to bond_features_dim
-        while len(features) < self.bond_features_dim:
-            features.append(0)
-
-        return np.array(features[:self.bond_features_dim], dtype=np.float32)
+        """Extract bond features using shared extractor."""
+        return MolecularFeatureExtractor.get_bond_features(bond)
