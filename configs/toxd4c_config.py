@@ -119,7 +119,16 @@ def get_enhanced_toxd4c_config() -> Dict[str, Any]:
             'rdkit_fp': {'n_bits': 2048},
             'descriptors': {'n_features': 15}
         },
-        
+
+        # Quantum Descriptor Module (可选，用于需要量子化学描述符的任务)
+        'use_quantum_descriptors': False,  # 默认关闭
+        'num_quantum_descriptors': 69,  # 描述符数量
+        'quantum_descriptor_dim': 256,  # 编码后的维度
+        'quantum_decay_layers': 4,  # 衰减层数
+        'quantum_decay_rate': 0.1,  # 衰减率
+        'quantum_use_gating': True,  # 是否使用特征门控
+        'quantum_sparsity_weight': 0.01,  # 稀疏性损失权重
+
         'task_configs': get_toxd4c_task_configs(),
         'task_weights': get_task_weights(),
         'task_groups': TASK_GROUPS,
