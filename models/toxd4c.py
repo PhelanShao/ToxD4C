@@ -11,6 +11,7 @@ from .architectures.gnn_transformer_hybrid import GNNTransformerHybrid
 from .architectures.gcn_stack import GCNStack
 from .encoders.geometric_encoder import GeometricEncoder
 from .encoders.hierarchical_encoder import HierarchicalEncoder
+from .encoders.quantum_descriptor_module import QuantumDescriptorModule
 from .fingerprints.molecular_fingerprint_enhanced import MolecularFingerprintModule
 from .heads.multi_scale_prediction_head import MultiScalePredictionHead
 from configs.toxd4c_config import CLASSIFICATION_TASKS, REGRESSION_TASKS
@@ -97,13 +98,28 @@ class ToxD4C(nn.Module):
                 output_dim=config.get('fingerprint_dim', 512),
                 fingerprint_configs=config.get('fingerprint_configs', {})
             )
+
+        # Quantum Descriptor Module (可选)
+        if config.get('use_quantum_descriptors', False):
+            self.quantum_descriptor_module = QuantumDescriptorModule(
+                num_descriptors=config.get('num_quantum_descriptors', 69),
+                hidden_dim=config['hidden_dim'],
+                output_dim=config.get('quantum_descriptor_dim', 256),
+                num_decay_layers=config.get('quantum_decay_layers', 4),
+                decay_rate=config.get('quantum_decay_rate', 0.1),
+                dropout=config['dropout'],
+                use_gating=config.get('quantum_use_gating', True),
+            )
+
         # Define the fusion layer with the maximum possible input dimension
         fusion_input_dim = config['hidden_dim']
         if config.get('use_hierarchical_encoder', False):
             fusion_input_dim += config['hidden_dim']
         if config.get('use_fingerprints', False):
             fusion_input_dim += config.get('fingerprint_dim', 512)
-            
+        if config.get('use_quantum_descriptors', False):
+            fusion_input_dim += config.get('quantum_descriptor_dim', 256)
+
         self.fusion_layer = nn.Linear(fusion_input_dim, config['hidden_dim'])
         
         self.prediction_head = MultiScalePredictionHead(
@@ -168,10 +184,29 @@ class ToxD4C(nn.Module):
             is_smiles_input = True
 
         if hasattr(self, 'fingerprint_module') and is_smiles_input:
-            fp_repr, fp_attn_weights = self.fingerprint_module(smiles=smiles_list)
+            fp_result = self.fingerprint_module(smiles=smiles_list)
+            # Handle both single return value and tuple return value
+            if isinstance(fp_result, tuple):
+                fp_repr, fp_attn_weights = fp_result
+                interp_data['fingerprint_attention'] = fp_attn_weights
+            else:
+                fp_repr = fp_result
+                interp_data['fingerprint_attention'] = None
             all_graph_repr.append(fp_repr)
-            interp_data['fingerprint_attention'] = fp_attn_weights
-            
+
+        # Quantum Descriptor Module (如果启用且提供了描述符)
+        quantum_sparsity_loss = torch.tensor(0.0, device=x.device)
+        if hasattr(self, 'quantum_descriptor_module'):
+            quantum_descriptors = data.get('quantum_descriptors')
+            if quantum_descriptors is not None:
+                qd_result = self.quantum_descriptor_module(
+                    quantum_descriptors,
+                    graph_repr=graph_repr_main
+                )
+                all_graph_repr.append(qd_result['descriptor_repr'])
+                interp_data['quantum_gate_values'] = qd_result['gate_values']
+                quantum_sparsity_loss = qd_result['sparsity_loss']
+
         if len(all_graph_repr) > 1:
             fused_repr = torch.cat(all_graph_repr, dim=1)
             
@@ -195,10 +230,14 @@ class ToxD4C(nn.Module):
             'interpretation': interp_data,
             'uncertainties': uncertainties
         }
-            
+
+        # 添加量子描述符稀疏性损失（用于训练）
+        if hasattr(self, 'quantum_descriptor_module'):
+            output['quantum_sparsity_loss'] = quantum_sparsity_loss
+
         if hasattr(self, 'contrastive_loss'):
             output['contrastive_features'] = graph_repr_main
-            
+
         return output
 
     def compute_contrastive_loss(self,
