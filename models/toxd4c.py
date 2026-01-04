@@ -105,6 +105,7 @@ class ToxD4C(nn.Module):
                 num_descriptors=config.get('num_quantum_descriptors', 69),
                 hidden_dim=config['hidden_dim'],
                 output_dim=config.get('quantum_descriptor_dim', 256),
+                graph_repr_dim=config['hidden_dim'],  # Match graph representation dimension
                 num_decay_layers=config.get('quantum_decay_layers', 4),
                 decay_rate=config.get('quantum_decay_rate', 0.1),
                 dropout=config['dropout'],

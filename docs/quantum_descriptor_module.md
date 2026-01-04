@@ -148,6 +148,7 @@ module = QuantumDescriptorModule(
     num_descriptors=69,
     hidden_dim=256,
     output_dim=256,
+    graph_repr_dim=512,  # Dimension of graph representation (for fusion)
     num_decay_layers=4,
     use_gating=True,
 )
