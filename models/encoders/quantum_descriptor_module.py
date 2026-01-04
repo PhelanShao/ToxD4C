@@ -181,18 +181,20 @@ class QuantumDescriptorModule(nn.Module):
         num_descriptors: int = 69,
         hidden_dim: int = 512,
         output_dim: int = 512,
+        graph_repr_dim: int = 512,  # Dimension of graph representation for fusion
         num_decay_layers: int = 4,
         decay_rate: float = 0.1,
         dropout: float = 0.1,
         use_gating: bool = True,
     ):
         super().__init__()
-        
+
         self.num_descriptors = num_descriptors
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
+        self.graph_repr_dim = graph_repr_dim
         self.use_gating = use_gating
-        
+
         # 输入投影
         self.input_proj = nn.Sequential(
             nn.Linear(num_descriptors, hidden_dim),
@@ -218,8 +220,15 @@ class QuantumDescriptorModule(nn.Module):
             nn.Linear(hidden_dim, output_dim),
             nn.LayerNorm(output_dim),
         )
-        
+
+        # 图表示投影层：将图表示投影到与描述符相同的维度
+        if graph_repr_dim != output_dim:
+            self.graph_proj = nn.Linear(graph_repr_dim, output_dim)
+        else:
+            self.graph_proj = nn.Identity()
+
         # 融合门：控制描述符信息与主表示的融合比例
+        # 输入维度为 output_dim * 2 (projected_graph + descriptor_repr)
         self.fusion_gate = nn.Sequential(
             nn.Linear(output_dim * 2, output_dim),
             nn.Sigmoid()
@@ -267,9 +276,11 @@ class QuantumDescriptorModule(nn.Module):
 
         # 如果提供了图表示，进行融合
         if graph_repr is not None:
-            concat = torch.cat([graph_repr, descriptor_repr], dim=-1)
+            # 投影图表示到与描述符相同的维度
+            graph_repr_proj = self.graph_proj(graph_repr)
+            concat = torch.cat([graph_repr_proj, descriptor_repr], dim=-1)
             fusion_weight = self.fusion_gate(concat)
-            fused = fusion_weight * descriptor_repr + (1 - fusion_weight) * graph_repr
+            fused = fusion_weight * descriptor_repr + (1 - fusion_weight) * graph_repr_proj
             result['fused_repr'] = fused
 
         return result
